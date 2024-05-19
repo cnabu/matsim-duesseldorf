@@ -6,7 +6,7 @@
     </module>
 
     <module name="controler">
-        <param name="lastIteration" value="450"/>
+        <param name="lastIteration" value="10"/>
         <param name="overwriteFiles" value="failIfDirectoryExists"/>
         <param name="runId" value="duesseldorf-1pct"/>
         <param name="outputDirectory" value="./output/v1.7-1pct"/>
@@ -23,7 +23,7 @@
     </module>
 
     <module name="network">
-        <param name="inputNetworkFile" value="https://svn.vsp.tu-berlin.de/repos/public-svn/matsim/scenarios/countries/de/duesseldorf/duesseldorf-v1.0/input/duesseldorf-v1.7-network-with-pt.xml.gz"/>
+        <param name="inputNetworkFile" value="changes-v1.7-network-with-pt.xml.gz"/>
         <param name="laneDefinitionsFile" value="https://svn.vsp.tu-berlin.de/repos/public-svn/matsim/scenarios/countries/de/duesseldorf/duesseldorf-v1.0/input/duesseldorf-v1.7-network-lanes.xml.gz" />
     </module>
 
