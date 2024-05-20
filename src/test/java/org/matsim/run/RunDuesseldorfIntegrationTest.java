@@ -1,8 +1,5 @@
 package org.matsim.run;
 
-import java.util.Map;
-import java.util.Random;
-
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -14,6 +11,9 @@ import org.matsim.core.config.ConfigUtils;
 import org.matsim.core.controler.OutputDirectoryHierarchy;
 import org.matsim.core.gbl.MatsimRandom;
 import org.matsim.testcases.MatsimTestUtils;
+
+import java.util.Map;
+import java.util.Random;
 
 public class RunDuesseldorfIntegrationTest {
 

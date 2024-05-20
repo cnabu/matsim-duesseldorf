@@ -5,8 +5,6 @@ import org.matsim.api.core.v01.network.Link;
 import org.matsim.core.network.NetworkUtils;
 import org.matsim.core.utils.collections.CollectionUtils;
 
-import java.util.Set;
-
 public class LimitedAccessBridge {
 
 	public static void main(String[] args){

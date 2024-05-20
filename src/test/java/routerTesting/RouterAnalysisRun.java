@@ -1,7 +1,5 @@
 package routerTesting;
 
-import java.util.Map;
-
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.Scenario;
 import org.matsim.api.core.v01.network.Link;
@@ -14,6 +12,8 @@ import org.matsim.core.router.util.LeastCostPathCalculator;
 import org.matsim.core.router.util.LeastCostPathCalculator.Path;
 import org.matsim.core.router.util.TravelDisutility;
 import org.matsim.core.scenario.ScenarioUtils;
+
+import java.util.Map;
 
 public class RouterAnalysisRun {
 	private final static String CONFIG_FILE = "C:\\Users\\cluac\\MATSimScenarios\\Dusseldorf\\Scenario\\duesseldorf-v1.2-10pct.config.xml";

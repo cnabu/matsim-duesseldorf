@@ -25,6 +25,7 @@ import org.matsim.analysis.ModeChoiceCoverageControlerListener;
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.Scenario;
 import org.matsim.api.core.v01.network.Link;
+import org.matsim.api.core.v01.network.Network;
 import org.matsim.application.MATSimApplication;
 import org.matsim.application.analysis.CheckPopulation;
 import org.matsim.application.analysis.DefaultAnalysisMainModeIdentifier;
@@ -47,22 +48,16 @@ import org.matsim.core.controler.AbstractModule;
 import org.matsim.core.controler.Controler;
 import org.matsim.core.mobsim.qsim.AbstractQSimModule;
 import org.matsim.core.mobsim.qsim.qnetsimengine.ConfigurableQNetworkFactory;
-import org.matsim.core.mobsim.qsim.qnetsimengine.QLanesNetworkFactory;
 import org.matsim.core.mobsim.qsim.qnetsimengine.QNetworkFactory;
 import org.matsim.core.replanning.strategies.DefaultPlanStrategiesModule;
 import org.matsim.core.router.AnalysisMainModeIdentifier;
-import org.matsim.lanes.Lane;
-import org.matsim.lanes.LanesToLinkAssignment;
 import org.matsim.prepare.*;
 import picocli.CommandLine;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @CommandLine.Command(header = ":: Open Düsseldorf Scenario ::", version = RunDuesseldorfScenario.VERSION)
@@ -78,43 +73,42 @@ import java.util.stream.Collectors;
 })
 public class RunDuesseldorfScenario extends MATSimApplication {
 
-	/**
-	 * Current version identifier.
-	 */
 	public static final String VERSION = "v1.7";
-	/**
-	 * Default coordinate system of the scenario.
-	 */
 	public static final String COORDINATE_SYSTEM = "EPSG:25832";
-	/**
-	 * 6.00° - 7.56°
-	 */
 	public static final double[] X_EXTENT = new double[]{290_000.00, 400_000.0};
-	/**
-	 * 50.60 - 51.65°
-	 */
 	public static final double[] Y_EXTENT = new double[]{5_610_000.00, 5_722_000.00};
 	private static final Logger log = LogManager.getLogger(RunDuesseldorfScenario.class);
+
 	@CommandLine.ArgGroup(exclusive = false, heading = "Flow capacity models\n")
 	private final VehicleShare vehicleShare = new VehicleShare();
+
 	@CommandLine.ArgGroup(exclusive = false, heading = "Policy options\n")
 	private final Policy policy = new Policy();
+
 	@CommandLine.Option(names = "--otfvis", defaultValue = "false", description = "Enable OTFVis live view")
 	private boolean otfvis;
+
 	@CommandLine.Mixin
 	private SampleOptions sample = new SampleOptions(1, 10, 25);
+
 	@CommandLine.Option(names = {"--dc"}, defaultValue = "1.14", description = "Correct demand by downscaling links.")
 	private double demandCorrection;
+
 	@CommandLine.Option(names = {"--lanes"}, defaultValue = "false", negatable = true, description = "Deactivate the use of lane information.")
 	private boolean withLanes;
+
 	@CommandLine.Option(names = {"--lane-capacity"}, description = "CSV file with lane capacities.", required = false)
 	private Path laneCapacity;
+
 	@CommandLine.Option(names = {"--capacity-factor"}, defaultValue = "1", description = "Scale lane capacity by this factor.")
 	private double capacityFactor;
+
 	@CommandLine.Option(names = {"--no-capacity-reduction"}, defaultValue = "false", description = "Disable reduction of flow capacity for taking turns.")
 	private boolean noCapacityReduction;
+
 	@CommandLine.Option(names = {"--free-flow"}, defaultValue = "1", description = "Scale up free flow speed of slow links.")
 	private double freeFlowFactor;
+
 	@CommandLine.Option(names = "--no-mc", defaultValue = "false", description = "Disable mode choice as replanning strategy.")
 	private boolean noModeChoice;
 
@@ -132,35 +126,22 @@ public class RunDuesseldorfScenario extends MATSimApplication {
 
 	@Override
 	protected Config prepareConfig(Config config) {
-
-		// addDefaultActivityParams(config);
-
 		for (long ii = 600; ii <= 97200; ii += 600) {
-
-			for (String act : List.of("home", "restaurant", "other", "visit", "errands", "educ_higher",
-				"educ_secondary")) {
-				config.planCalcScore()
-					.addActivityParams(new ActivityParams(act + "_" + ii).setTypicalDuration(ii));
+			for (String act : List.of("home", "restaurant", "other", "visit", "errands", "educ_higher", "educ_secondary")) {
+				config.planCalcScore().addActivityParams(new PlanCalcScoreConfigGroup.ActivityParams(act + "_" + ii).setTypicalDuration(ii));
 			}
 
-			config.planCalcScore().addActivityParams(new ActivityParams("work_" + ii).setTypicalDuration(ii)
-				.setOpeningTime(6. * 3600.).setClosingTime(20. * 3600.));
-			config.planCalcScore().addActivityParams(new ActivityParams("business_" + ii).setTypicalDuration(ii)
-				.setOpeningTime(6. * 3600.).setClosingTime(20. * 3600.));
-			config.planCalcScore().addActivityParams(new ActivityParams("leisure_" + ii).setTypicalDuration(ii)
-				.setOpeningTime(9. * 3600.).setClosingTime(27. * 3600.));
-			config.planCalcScore().addActivityParams(new ActivityParams("shopping_" + ii).setTypicalDuration(ii)
-				.setOpeningTime(8. * 3600.).setClosingTime(20. * 3600.));
+			config.planCalcScore().addActivityParams(new ActivityParams("work_" + ii).setTypicalDuration(ii).setOpeningTime(6. * 3600.).setClosingTime(20. * 3600.));
+			config.planCalcScore().addActivityParams(new ActivityParams("business_" + ii).setTypicalDuration(ii).setOpeningTime(6. * 3600.).setClosingTime(20. * 3600.));
+			config.planCalcScore().addActivityParams(new ActivityParams("leisure_" + ii).setTypicalDuration(ii).setOpeningTime(9. * 3600.).setClosingTime(27. * 3600.));
+			config.planCalcScore().addActivityParams(new ActivityParams("shopping_" + ii).setTypicalDuration(ii).setOpeningTime(8. * 3600.).setClosingTime(20. * 3600.));
 		}
 
-		// Config changes for larger samples
 		if (sample.getSize() != 1) {
-
 			config.plans().setInputFile(sample.adjustName(config.plans().getInputFile()));
 			config.controler().setRunId(sample.adjustName(config.controler().getRunId()));
 			config.controler().setOutputDirectory(sample.adjustName(config.controler().getOutputDirectory()));
 
-			// Further reduction of flow capacity because of difference in the absolute, number of trips by 1.78x
 			config.qsim().setFlowCapFactor(sample.getSize() / (100.0 * demandCorrection));
 			config.qsim().setStorageCapFactor(sample.getSize() / (100.0 * demandCorrection));
 		}
@@ -168,7 +149,6 @@ public class RunDuesseldorfScenario extends MATSimApplication {
 		if (demandCorrection != 1.0)
 			addRunOption(config, "dc", demandCorrection);
 
-		// Deactivate lanes information
 		config.controler().setLinkToLinkRoutingEnabled(false);
 		config.network().setLaneDefinitionsFile(null);
 		config.travelTimeCalculator().setCalculateLinkToLinkTravelTimes(false);
@@ -177,7 +157,6 @@ public class RunDuesseldorfScenario extends MATSimApplication {
 		if (withLanes)
 			throw new IllegalArgumentException("The argument --no-lanes/--lanes is deprecated, please remove it.");
 
-
 		if (capacityFactor != 1.0)
 			addRunOption(config, "cap", capacityFactor);
 
@@ -185,8 +164,6 @@ public class RunDuesseldorfScenario extends MATSimApplication {
 			addRunOption(config, "ff", freeFlowFactor);
 
 		if (noModeChoice) {
-
-			// reduce number of iterations when running no mode choice
 			config.controler().setLastIteration((int) (config.controler().getLastIteration() * 0.6));
 
 			List<StrategyConfigGroup.StrategySettings> strategies = config.strategy().getStrategySettings().stream()
@@ -203,7 +180,6 @@ public class RunDuesseldorfScenario extends MATSimApplication {
 
 			strategies.forEach(s -> config.strategy().addStrategySettings(s));
 
-
 			addRunOption(config, "noMc");
 
 			log.info("Number of iterations reduced automatically by using no mode choice: {}", config.controler().getLastIteration());
@@ -212,61 +188,48 @@ public class RunDuesseldorfScenario extends MATSimApplication {
 		if (noCapacityReduction)
 			addRunOption(config, "no-cap-red");
 
-		// config.planCalcScore().addActivityParams(new
-		// ActivityParams("freight").setTypicalDuration(12. * 3600.));
 		config.planCalcScore().addActivityParams(new ActivityParams("car interaction").setTypicalDuration(60));
 		config.planCalcScore().addActivityParams(new ActivityParams("other").setTypicalDuration(600 * 3));
-
 		config.planCalcScore().addActivityParams(new ActivityParams("freight_start").setTypicalDuration(60 * 15));
 		config.planCalcScore().addActivityParams(new ActivityParams("freight_end").setTypicalDuration(60 * 15));
 
-		// vsp defaults
 		config.vspExperimental().setVspDefaultsCheckingLevel(VspExperimentalConfigGroup.VspDefaultsCheckingLevel.info);
 		config.plansCalcRoute().setAccessEgressType(PlansCalcRouteConfigGroup.AccessEgressType.accessEgressModeToLink);
 		config.qsim().setUsingTravelTimeCheckInTeleportation(true);
-//		config.qsim().setTrafficDynamics(QSimConfigGroup.TrafficDynamics.kinematicWaves);
-
-		config.plans().setHandlingOfPlansWithoutRoutingMode(
-			PlansConfigGroup.HandlingOfPlansWithoutRoutingMode.useMainModeIdentifier);
+		config.plans().setHandlingOfPlansWithoutRoutingMode(PlansConfigGroup.HandlingOfPlansWithoutRoutingMode.useMainModeIdentifier);
 
 		return config;
 	}
 
 	@Override
 	protected void prepareScenario(Scenario scenario) {
+		// Call network modification before existing setup
+		modifyNetwork(scenario.getNetwork());
 
-		// scale free flow speed
+		super.prepareScenario(scenario);
+
 		Map<Id<Link>, ? extends Link> links = scenario.getNetwork().getLinks();
 		Object2DoubleMap<Pair<Id<Link>, Id<Link>>> capacities = new Object2DoubleOpenHashMap<>();
 
 		if (laneCapacity != null) {
-
 			capacities = CreateNetwork.readLinkCapacities(laneCapacity);
-
 			log.info("Overwrite capacities from {}, containing {} links", laneCapacity, capacities.size());
 
 			int n = CreateNetwork.setLinkCapacities(scenario.getNetwork(), capacities, null);
-
 			log.info("Unmatched links: {}", n);
 		}
 
 		if (vehicleShare.av > 0 || vehicleShare.acv > 0) {
-
 			if (vehicleShare.av > 0 && vehicleShare.acv > 0)
 				throw new IllegalArgumentException("Only one of ACV or AV can be greater 0!");
 
 			log.info("Applying model AV {} ACV {} to road capacities", vehicleShare.av, vehicleShare.acv);
-
 			Set<Id<Link>> ids = capacities.keySet().stream().map(Pair::left).collect(Collectors.toSet());
-
 			Double2DoubleMap factors = new Double2DoubleOpenHashMap();
 
 			for (Link link : links.values()) {
-
-				// Skip links that have been set already
 				if (ids.contains(link.getId()))
 					continue;
-
 				if (link.getAttributes().getAttribute("allowed_speed") == null)
 					continue;
 
@@ -278,7 +241,6 @@ public class RunDuesseldorfScenario extends MATSimApplication {
 
 				link.setCapacity(link.getCapacity() * cap);
 			}
-
 			log.trace("Done");
 		}
 
@@ -286,74 +248,54 @@ public class RunDuesseldorfScenario extends MATSimApplication {
 		Set<Id<Link>> noCar = new HashSet<>();
 
 		if (policy.carFilter != null) {
-
 			try (CSVParser parser = new CSVParser(Files.newBufferedReader(policy.carFilter), CSVFormat.DEFAULT.withFirstRecordAsHeader())) {
 				for (CSVRecord record : parser) {
 					noCar.add(Id.createLinkId(record.get("ID")));
 				}
-
 			} catch (IOException e) {
 				throw new IllegalStateException("Could not read csv", e);
 			}
-
 			log.info("Reading car filter from {} with {} links", policy.carFilter, noCar.size());
-
 		}
 
 		if (policy.linkFilter != null) {
 			log.info("Reading link filter from {}", policy.linkFilter);
-
 			try (CSVParser parser = new CSVParser(Files.newBufferedReader(policy.linkFilter), CSVFormat.DEFAULT.withFirstRecordAsHeader())) {
 				for (CSVRecord record : parser) {
 					linkFilter.put(Id.createLinkId(record.get("ID")), Integer.parseInt(record.get("corridor")));
 				}
-
 			} catch (IOException e) {
 				throw new IllegalStateException("Could not read csv", e);
 			}
 
 			double factor = 1;
-
 			if (policy.capacity != null) {
-
 				Object2DoubleMap<Pair<Id<Link>, Id<Link>>> newCapacities = CreateNetwork.readLinkCapacities(policy.capacity);
 				newCapacities.keySet().removeIf(e -> !linkFilter.containsKey(e.key()));
 
 				log.info("Policy capacities from {}, containing {} links", policy.capacity, newCapacities.size());
-
 				if (capacities.isEmpty())
 					throw new IllegalStateException("Policy requires the base capacities to be set.");
 
-
 				DoubleList rel = new DoubleArrayList();
-
 				for (Object2DoubleMap.Entry<Pair<Id<Link>, Id<Link>>> e : newCapacities.object2DoubleEntrySet()) {
 					rel.add(e.getDoubleValue() / capacities.getDouble(e.getKey()));
 				}
-
 				factor = rel.doubleStream().average().orElseThrow();
-
 				log.info("Capacity increase factor is {}", factor);
 
-				// Empty filter, will be set in separate function
 				int n = CreateNetwork.setLinkCapacities(scenario.getNetwork(), newCapacities, new HashSet<>());
-
 				log.info("Unmatched links: {}", n);
 			}
-
 			CreateNetwork.reduceLinkLanesAndMultiplyPerLaneCapacity(scenario.getNetwork(), linkFilter, factor, policy.laneReduction);
 		}
-
 
 		for (Link link : links.values()) {
 			if (link.getFreespeed() < 25.5 / 3.6) {
 				link.setFreespeed(link.getFreespeed() * freeFlowFactor);
 			}
 
-			// might be null, so avoid unboxing
-			if (link.getAttributes().getAttribute("junction") == Boolean.TRUE
-				|| "traffic_light".equals(link.getToNode().getAttributes().getAttribute("type"))) {
-
+			if (link.getAttributes().getAttribute("junction") == Boolean.TRUE || "traffic_light".equals(link.getToNode().getAttributes().getAttribute("type"))) {
 				if (capacityFactor != 1 && (linkFilter.isEmpty() || linkFilter.containsKey(link.getId()))) {
 					log.debug("Setting capacity for link: {}", link);
 					link.setCapacity(link.getCapacity() * capacityFactor);
@@ -361,28 +303,46 @@ public class RunDuesseldorfScenario extends MATSimApplication {
 			}
 
 			Set<String> modes = link.getAllowedModes();
-
-			// allow freight traffic together with cars
 			if (modes.contains("car")) {
 				HashSet<String> newModes = Sets.newHashSet(modes);
 				newModes.add("freight");
-
 				link.setAllowedModes(newModes);
 			}
 
-			// make link unattractive for cars
 			if (noCar.contains(link.getId())) {
 				link.setFreespeed(15 / 3.6);
 				link.setCapacity(300);
 			}
+		}
+	}
 
+	private void modifyNetwork(Network network) {
+		Set<Id<Link>> eligibleLinks = new HashSet<>();
+
+		for (Link link : network.getLinks().values()) {
+			double freespeed = link.getFreespeed();
+			double capacity = link.getCapacity();
+
+			if (freespeed >= 14.0 / 3.6 && freespeed <= 30.0 / 3.6 && capacity >= 600.0 && capacity <= 1000.0) {
+				eligibleLinks.add(link.getId());
+			}
 		}
 
+		Random random = new Random();
+		int count = 0;
+		for (Id<Link> linkId : eligibleLinks) {
+			if (random.nextDouble() < 0.5) {    // Stochastic selection: Modify 50% of eligible links
+				Link link = network.getLinks().get(linkId);
+				link.setFreespeed(15.0 / 3.6);  // Convert km/h to m/s
+				link.setCapacity(600.0);
+				count++;
+			}
+		}
+		System.out.println("Modified " + count + " links to reduced freespeed and capacity.");
 	}
 
 	@Override
 	protected void prepareControler(Controler controler) {
-
 		if (otfvis)
 			controler.addOverridingModule(new OTFVisWithSignalsLiveModule());
 
@@ -398,17 +358,11 @@ public class RunDuesseldorfScenario extends MATSimApplication {
 				Multibinder<StrategyWeightFadeout.Schedule> schedules = Multibinder.newSetBinder(binder(), StrategyWeightFadeout.Schedule.class);
 
 				if (noModeChoice) {
-
 					schedules.addBinding().toInstance(new StrategyWeightFadeout.Schedule(DefaultPlanStrategiesModule.DefaultStrategy.ReRoute, "person", 0.6));
-
-
 				} else {
 					schedules.addBinding().toInstance(new StrategyWeightFadeout.Schedule(DefaultPlanStrategiesModule.DefaultStrategy.SubtourModeChoice, "person", 0.65, 0.85));
 					schedules.addBinding().toInstance(new StrategyWeightFadeout.Schedule(DefaultPlanStrategiesModule.DefaultStrategy.ReRoute, "person", 0.78));
-
 				}
-
-
 			}
 		});
 
@@ -430,24 +384,17 @@ public class RunDuesseldorfScenario extends MATSimApplication {
 				return factory;
 			}
 		});
-
 	}
 
-	/**
-	 * Option group to modify capacities based on vehicle share model
-	 */
 	static final class VehicleShare {
 		@CommandLine.Option(names = "--av", defaultValue = "0", description = "Percentage of automated vehicles. [0, 100]")
 		int av;
+
 		@CommandLine.Option(names = "--acv", defaultValue = "0", description = "Percentage of autonomous connected vehicles. [0, 100]")
 		int acv;
 	}
 
-	/**
-	 * Policy options
-	 */
 	static final class Policy {
-
 		@CommandLine.Option(names = {"--link-filter"}, description = "CSV file with links to filter the provided link capacities from SUMO.", required = false)
 		private Path linkFilter;
 
@@ -459,7 +406,5 @@ public class RunDuesseldorfScenario extends MATSimApplication {
 
 		@CommandLine.Option(names = {"--policy-capacity"}, description = "CSV file with lane capacities for link-filter.", required = false)
 		private Path capacity;
-
 	}
-
 }
