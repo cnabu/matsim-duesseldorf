@@ -6,7 +6,7 @@
     </module>
 
     <module name="controler">
-        <param name="lastIteration" value="2"/>
+        <param name="lastIteration" value="50"/>
         <param name="overwriteFiles" value="overwriteExistingFiles"/>
         <param name="runId" value="duesseldorf-1pct"/>
         <param name="outputDirectory" value="./output/v1.7-1pct"/>
@@ -23,7 +23,7 @@
     </module>
 
     <module name="network">
-        <param name="inputNetworkFile" value="C:/Users/omkarp/IdeaProjects/matsim-duesseldorf/scenarios/input/duesseldorf-v1.7-network-with-pt-modified.xml.gz"/>
+        <param name="inputNetworkFile" value="C:/Users/omkarp/Downloads/matsim-duesseldorf/scenarios/input/duesseldorf-v1.7-network-with-pt-modified.xml.gz"/>
         <param name="laneDefinitionsFile" value="https://svn.vsp.tu-berlin.de/repos/public-svn/matsim/scenarios/countries/de/duesseldorf/duesseldorf-v1.0/input/duesseldorf-v1.7-network-lanes.xml.gz" />
     </module>
 
@@ -146,10 +146,10 @@
             <param name="marginalUtilityOfMoney" value="0.6" />
 
             <parameterset type="modeParams">
-                <param name="constant" value="-2.0"/> <!-- Decreased to make car less attractive -->
-                <param name="marginalUtilityOfTraveling_util_hr" value="-1.0"/> <!-- Decreased to reflect more negative experience -->
+                <param name="constant" value="-1.4771345230720647"/>
+                <param name="marginalUtilityOfTraveling_util_hr" value="-0.5"/>
                 <param name="mode" value="car"/>
-                <param name="monetaryDistanceRate" value="-0.0004"/> <!-- Increased to penalize car travel more -->
+                <param name="monetaryDistanceRate" value="-0.0002"/>
                 <param name="dailyMonetaryConstant" value="-5.3"/>
             </parameterset>
 
@@ -169,14 +169,14 @@
             </parameterset>
 
             <parameterset type="modeParams">
-                <param name="constant" value="1.0"/> <!-- Increased to make biking more attractive -->
-                <param name="marginalUtilityOfTraveling_util_hr" value="1.0"/> <!-- Increased to reflect a positive experience -->
+                <param name="constant" value="-1.8108255252290775"/>
+                <param name="marginalUtilityOfTraveling_util_hr" value="-1.2"/> <!-- utility for biking increased a bit from -1.5 to -1.2 due to policy changes for the city. -->
                 <param name="mode" value="bike"/>
             </parameterset>
 
             <parameterset type="modeParams">
                 <param name="constant" value="0.0"/>
-                <param name="marginalUtilityOfTraveling_util_hr" value="-1.5"/>
+                <param name="marginalUtilityOfTraveling_util_hr" value="-1.2"/> <!-- utility for walk increased a bit from -1.5 to -1.2 due to policy changes -->
                 <param name="mode" value="walk"/>
             </parameterset>
 
